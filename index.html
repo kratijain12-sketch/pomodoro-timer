@@ -6,187 +6,167 @@
 <title>Pomodoro Timer</title>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial, sans-serif;
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:sans-serif;
 }
 
-body {
-  width: 340px;
-  height: 430px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: transparent;
+body{
+  width:320px;
+  height:420px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#f7f7f7;
 }
 
-.timer-widget {
-  width: 320px;
-  padding: 20px;
-  border-radius: 25px;
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(15px);
-  text-align: center;
+.timer-box{
+  width:300px;
+  padding:20px;
+  border-radius:20px;
+  text-align:center;
+  background:white;
+  box-shadow:0 10px 25px rgba(0,0,0,0.08);
 }
 
-.timer-circle {
-  position: relative;
-  width: 220px;
-  height: 220px;
-  margin: auto;
+.timer-circle{
+  position:relative;
+  width:220px;
+  height:220px;
+  margin:auto;
 }
 
-svg {
-  width: 220px;
-  height: 220px;
-  transform: rotate(-90deg);
+svg{
+  transform:rotate(-90deg);
 }
 
-.bg-ring {
-  fill: none;
-  stroke: rgba(255,255,255,0.3);
-  stroke-width: 10;
+circle{
+  fill:none;
+  stroke-width:10;
 }
 
-.progress-ring {
-  fill: none;
-  stroke: #ff6b9d;
-  stroke-width: 10;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear;
+.bg{
+  stroke:#ddd;
 }
 
-.timer {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 2.3rem;
-  font-weight: bold;
+.progress{
+  stroke:#ff6b9d;
+  stroke-linecap:round;
 }
 
-input {
-  margin-top: 20px;
-  width: 100px;
-  padding: 8px;
-  border: none;
-  border-radius: 10px;
-  text-align: center;
+.time{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  font-size:35px;
+  font-weight:bold;
 }
 
-button {
-  margin: 8px 4px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
+input{
+  margin-top:20px;
+  width:100px;
+  padding:8px;
+  text-align:center;
 }
 
-.sessions {
-  margin-top: 15px;
+button{
+  margin:5px;
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
 }
 </style>
 </head>
-
 <body>
 
-<div class="timer-widget">
+<div class="timer-box">
   <div class="timer-circle">
-    <svg>
-      <circle class="bg-ring" cx="110" cy="110" r="90"></circle>
-      <circle class="progress-ring" cx="110" cy="110" r="90" id="progress"></circle>
+    <svg width="220" height="220">
+      <circle class="bg" cx="110" cy="110" r="90"></circle>
+      <circle id="progress" class="progress" cx="110" cy="110" r="90"></circle>
     </svg>
-    <div class="timer" id="timer">00:00</div>
+    <div id="time" class="time">00:00</div>
   </div>
 
-  <input type="number" id="minutesInput" placeholder="Minutes">
+  <input id="minutes" type="number" placeholder="Min">
 
   <div>
-    <button onclick="setTime()">Set</button>
-    <button onclick="startTimer()">Start</button>
-    <button onclick="pauseTimer()">Pause</button>
-    <button onclick="resetTimer()">Reset</button>
-  </div>
-
-  <div class="sessions">
-    Sessions: <span id="sessions">0</span>
+    <button id="setBtn">Set</button>
+    <button id="startBtn">Start</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="resetBtn">Reset</button>
   </div>
 </div>
 
 <script>
-let timerInterval;
-let totalSeconds = 0;
-let remainingSeconds = 0;
-let isRunning = false;
-let sessions = 0;
+document.addEventListener("DOMContentLoaded", () => {
+  let total = 0;
+  let left = 0;
+  let timer = null;
 
-const timerDisplay = document.getElementById("timer");
-const progressRing = document.getElementById("progress");
-const sessionsDisplay = document.getElementById("sessions");
+  const timeEl = document.getElementById("time");
+  const progress = document.getElementById("progress");
+  const radius = 90;
+  const circumference = 2 * Math.PI * radius;
 
-const radius = 90;
-const circumference = 2 * Math.PI * radius;
+  progress.style.strokeDasharray = circumference;
+  progress.style.strokeDashoffset = circumference;
 
-progressRing.style.strokeDasharray = circumference;
-progressRing.style.strokeDashoffset = circumference;
+  function update() {
+    let mins = Math.floor(left / 60);
+    let secs = left % 60;
 
-function setTime() {
-  const minutes = parseInt(document.getElementById("minutesInput").value);
+    timeEl.textContent =
+      String(mins).padStart(2,"0") + ":" +
+      String(secs).padStart(2,"0");
 
-  if (isNaN(minutes) || minutes <= 0) {
-    alert("Please enter valid minutes");
-    return;
+    if(total > 0){
+      let offset = circumference - (left / total) * circumference;
+      progress.style.strokeDashoffset = offset;
+    }
   }
 
-  totalSeconds = minutes * 60;
-  remainingSeconds = totalSeconds;
-  updateDisplay();
-}
+  document.getElementById("setBtn").onclick = () => {
+    const mins = parseInt(document.getElementById("minutes").value);
 
-function updateDisplay() {
-  const mins = Math.floor(remainingSeconds / 60);
-  const secs = remainingSeconds % 60;
+    if(!mins || mins <= 0) return;
 
-  timerDisplay.textContent =
-    `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    total = mins * 60;
+    left = total;
+    update();
+  };
 
-  const progress = remainingSeconds / totalSeconds;
-  progressRing.style.strokeDashoffset =
-    circumference * (1 - progress);
-}
+  document.getElementById("startBtn").onclick = () => {
+    if(timer || left <= 0) return;
 
-function startTimer() {
-  if (isRunning || remainingSeconds <= 0) return;
+    timer = setInterval(() => {
+      left--;
+      update();
 
-  isRunning = true;
+      if(left <= 0){
+        clearInterval(timer);
+        timer = null;
+        alert("Done ✨");
+      }
+    },1000);
+  };
 
-  timerInterval = setInterval(() => {
-    remainingSeconds--;
-    updateDisplay();
+  document.getElementById("pauseBtn").onclick = () => {
+    clearInterval(timer);
+    timer = null;
+  };
 
-    if (remainingSeconds <= 0) {
-      clearInterval(timerInterval);
-      isRunning = false;
-      sessions++;
-      sessionsDisplay.textContent = sessions;
-      alert("Pomodoro Complete ✨");
-    }
-  }, 1000);
-}
-
-function pauseTimer() {
-  clearInterval(timerInterval);
-  isRunning = false;
-}
-
-function resetTimer() {
-  clearInterval(timerInterval);
-  isRunning = false;
-  remainingSeconds = totalSeconds;
-  updateDisplay();
-}
+  document.getElementById("resetBtn").onclick = () => {
+    clearInterval(timer);
+    timer = null;
+    left = total;
+    update();
+  };
+});
 </script>
 
 </body>
