@@ -1,39 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aesthetic Timer</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Widget</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Poppins, sans-serif;
+}
+
+body {
+  width: 340px;
+  height: 430px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  overflow: hidden;
+}
+
+.timer-widget {
+  width: 320px;
+  padding: 20px;
+  border-radius: 25px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(20px);
+  text-align: center;
+}
+
+.timer-circle {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: auto;
+}
+
+svg {
+  transform: rotate(-90deg);
+}
+
+.bg-ring {
+  fill: none;
+  stroke: rgba(255,255,255,0.25);
+  stroke-width: 10;
+}
+
+.progress-ring {
+  fill: none;
+  stroke: #ff7aa2;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 565;
+  stroke-dashoffset: 565;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.timer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.4rem;
+  font-weight: bold;
+}
+
+.time-input {
+  margin-top: 20px;
+}
+
+input {
+  width: 90px;
+  padding: 8px;
+  border: none;
+  border-radius: 10px;
+  text-align: center;
+}
+
+button {
+  margin: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.sessions {
+  margin-top: 15px;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container">
-  <h1>Study Timer ✨</h1>
-
+<div class="timer-widget">
   <div class="timer-circle">
-    <svg width="320" height="320">
-      <circle class="bg-ring" cx="160" cy="160" r="130"></circle>
-      <circle class="progress-ring" cx="160" cy="160" r="130" id="progress"></circle>
+    <svg width="220" height="220">
+      <circle class="bg-ring" cx="110" cy="110" r="90"></circle>
+      <circle class="progress-ring" cx="110" cy="110" r="90" id="progress"></circle>
     </svg>
 
     <div class="timer" id="timer">00:00</div>
   </div>
 
   <div class="time-input">
-    <input type="number" id="customMinutes" placeholder="Enter minutes">
+    <input type="number" id="customMinutes" placeholder="Min">
     <button onclick="setCustomTime()">Set</button>
   </div>
 
-  <div class="controls">
+  <div>
     <button onclick="startTimer()">Start</button>
     <button onclick="pauseTimer()">Pause</button>
     <button onclick="resetTimer()">Reset</button>
   </div>
 
-  <p>Completed Sessions: <span id="sessions">0</span></p>
+  <div class="sessions">
+    Sessions: <span id="sessions">0</span>
+  </div>
 </div>
 
-<script src="script.js"></script>
+<script>
+let timer;
+let totalTime = 0;
+let timeLeft = 0;
+let isRunning = false;
+let sessions = 0;
+
+const timerDisplay = document.getElementById("timer");
+const progress = document.getElementById("progress");
+const sessionsDisplay = document.getElementById("sessions");
+
+const circumference = 2 * Math.PI * 90;
+
+function setCustomTime() {
+  const minutes = parseInt(document.getElementById("customMinutes").value);
+  if (!minutes || minutes <= 0) return;
+
+  totalTime = minutes * 60;
+  timeLeft = totalTime;
+  updateTimer();
+}
+
+function updateTimer() {
+  let mins = Math.floor(timeLeft / 60);
+  let secs = timeLeft % 60;
+
+  timerDisplay.innerText =
+    `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+
+  let offset = circumference - (timeLeft / totalTime) * circumference;
+  progress.style.strokeDashoffset = offset;
+}
+
+function startTimer() {
+  if (isRunning || timeLeft <= 0) return;
+
+  isRunning = true;
+
+  timer = setInterval(() => {
+    if (timeLeft > 0) {
+      timeLeft--;
+      updateTimer();
+    } else {
+      clearInterval(timer);
+      isRunning = false;
+      sessions++;
+      sessionsDisplay.innerText = sessions;
+      alert("Session complete ✨");
+    }
+  }, 1000);
+}
+
+function pauseTimer() {
+  clearInterval(timer);
+  isRunning = false;
+}
+
+function resetTimer() {
+  clearInterval(timer);
+  isRunning = false;
+  timeLeft = totalTime;
+  updateTimer();
+}
+</script>
+
 </body>
 </html>
