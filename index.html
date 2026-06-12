@@ -1,173 +1,457 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pomodoro Timer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomodoro Timer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap');
 
-<style>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:sans-serif;
-}
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-body{
-  width:320px;
-  height:420px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:#f7f7f7;
-}
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #0f0f1a;
+      font-family: 'Inter', sans-serif;
+      color: #fff;
+    }
 
-.timer-box{
-  width:300px;
-  padding:20px;
-  border-radius:20px;
-  text-align:center;
-  background:white;
-  box-shadow:0 10px 25px rgba(0,0,0,0.08);
-}
+    .card {
+      background: #1a1a2e;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 28px;
+      padding: 36px 32px 32px;
+      width: 340px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
 
-.timer-circle{
-  position:relative;
-  width:220px;
-  height:220px;
-  margin:auto;
-}
+    h1 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #ff6b9d;
+      margin-bottom: 28px;
+    }
 
-svg{
-  transform:rotate(-90deg);
-}
+    /* ── Mode tabs ── */
+    .modes {
+      display: flex;
+      background: #111124;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 28px;
+      gap: 4px;
+    }
 
-circle{
-  fill:none;
-  stroke-width:10;
-}
+    .mode-btn {
+      flex: 1;
+      padding: 7px 4px;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.4);
+      transition: background 0.2s, color 0.2s;
+    }
 
-.bg{
-  stroke:#ddd;
-}
+    .mode-btn.active {
+      background: #ff6b9d;
+      color: #fff;
+    }
 
-.progress{
-  stroke:#ff6b9d;
-  stroke-linecap:round;
-}
+    /* ── SVG ring ── */
+    .ring-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 28px;
+    }
 
-.time{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  font-size:35px;
-  font-weight:bold;
-}
+    .ring-wrap svg {
+      width: 200px;
+      height: 200px;
+      transform: rotate(-90deg);
+    }
 
-input{
-  margin-top:20px;
-  width:100px;
-  padding:8px;
-  text-align:center;
-}
+    .bg-ring {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.07);
+      stroke-width: 10;
+    }
 
-button{
-  margin:5px;
-  padding:8px 12px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-</style>
+    .progress-ring {
+      fill: none;
+      stroke: #ff6b9d;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+
+    .timer-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .timer-digits {
+      font-family: 'Space Mono', monospace;
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .timer-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 6px;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .btn:active { transform: scale(0.96); }
+
+    .btn-primary {
+      background: #ff6b9d;
+      color: #fff;
+      padding: 10px 30px;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── Custom minutes input ── */
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .input-row label {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .input-row input {
+      width: 64px;
+      padding: 7px 10px;
+      background: #111124;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.82rem;
+      font-family: 'Space Mono', monospace;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-row input:focus {
+      border-color: #ff6b9d;
+    }
+
+    .btn-set {
+      padding: 7px 14px;
+      background: rgba(255, 107, 157, 0.15);
+      color: #ff6b9d;
+      border: 1px solid rgba(255, 107, 157, 0.3);
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-set:hover { background: rgba(255, 107, 157, 0.25); }
+
+    /* ── Sessions ── */
+    .sessions-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .session-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      transition: background 0.3s;
+    }
+
+    .session-dot.done { background: #ff6b9d; }
+
+    .sessions-count {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #ff6b9d;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
 </head>
 <body>
 
-<div class="timer-box">
-  <div class="timer-circle">
-    <svg width="220" height="220">
-      <circle class="bg" cx="110" cy="110" r="90"></circle>
-      <circle id="progress" class="progress" cx="110" cy="110" r="90"></circle>
-    </svg>
-    <div id="time" class="time">00:00</div>
+<div class="card">
+  <h1>Pomodoro Timer</h1>
+
+  <div class="modes">
+    <button class="mode-btn active" onclick="setMode('pomodoro')">Pomodoro</button>
+    <button class="mode-btn" onclick="setMode('short')">Short Break</button>
+    <button class="mode-btn" onclick="setMode('long')">Long Break</button>
   </div>
 
-  <input id="minutes" type="number" placeholder="Min">
+  <div class="ring-wrap">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <circle class="bg-ring" cx="100" cy="100" r="88" />
+      <circle class="progress-ring" id="progressRing" cx="100" cy="100" r="88" />
+    </svg>
+    <div class="timer-text">
+      <div class="timer-digits" id="timerDisplay">25:00</div>
+      <div class="timer-label" id="timerLabel">focus</div>
+    </div>
+  </div>
 
-  <div>
-    <button id="setBtn">Set</button>
-    <button id="startBtn">Start</button>
-    <button id="pauseBtn">Pause</button>
-    <button id="resetBtn">Reset</button>
+  <div class="input-row">
+    <label for="customMin">Custom min</label>
+    <input type="number" id="customMin" min="1" max="99" placeholder="25" />
+    <button class="btn-set" onclick="applyCustomTime()">Set</button>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" id="resetBtn" onclick="resetTimer()">Reset</button>
+    <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Start</button>
+  </div>
+
+  <div class="sessions-row">
+    <div class="session-dot" id="d0"></div>
+    <div class="session-dot" id="d1"></div>
+    <div class="session-dot" id="d2"></div>
+    <div class="session-dot" id="d3"></div>
+    <span class="sessions-count" id="sessionsCount">0 sessions</span>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  let total = 0;
-  let left = 0;
-  let timer = null;
+  /* ── Constants ── */
+  const MODES = {
+    pomodoro: { minutes: 25, label: 'focus',       color: '#ff6b9d' },
+    short:    { minutes: 5,  label: 'short break', color: '#6bcbff' },
+    long:     { minutes: 15, label: 'long break',  color: '#a06bff' },
+  };
 
-  const timeEl = document.getElementById("time");
-  const progress = document.getElementById("progress");
-  const radius = 90;
-  const circumference = 2 * Math.PI * radius;
+  const RADIUS      = 88;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-  progress.style.strokeDasharray = circumference;
-  progress.style.strokeDashoffset = circumference;
+  /* ── State ── */
+  let currentMode   = 'pomodoro';
+  let totalSeconds  = MODES.pomodoro.minutes * 60;
+  let remaining     = totalSeconds;
+  let isRunning     = false;
+  let intervalId    = null;
+  let sessions      = 0;
 
-  function update() {
-    let mins = Math.floor(left / 60);
-    let secs = left % 60;
+  /* ── DOM refs ── */
+  const ring        = document.getElementById('progressRing');
+  const display     = document.getElementById('timerDisplay');
+  const labelEl     = document.getElementById('timerLabel');
+  const startBtn    = document.getElementById('startBtn');
+  const toast       = document.getElementById('toast');
+  const modeButtons = document.querySelectorAll('.mode-btn');
 
-    timeEl.textContent =
-      String(mins).padStart(2,"0") + ":" +
-      String(secs).padStart(2,"0");
+  /* ── Init ring ── */
+  ring.style.strokeDasharray  = CIRCUMFERENCE;
+  ring.style.strokeDashoffset = 0;
 
-    if(total > 0){
-      let offset = circumference - (left / total) * circumference;
-      progress.style.strokeDashoffset = offset;
+  /* ── Helpers ── */
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  function updateRing() {
+    const progress = totalSeconds > 0 ? remaining / totalSeconds : 1;
+    ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+  }
+
+  function render() {
+    display.textContent = fmt(remaining);
+    updateRing();
+  }
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  function updateSessionDots() {
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById(`d${i}`);
+      dot.classList.toggle('done', i < sessions % 4 || (sessions > 0 && sessions % 4 === 0));
+    }
+    document.getElementById('sessionsCount').textContent =
+      `${sessions} session${sessions !== 1 ? 's' : ''}`;
+  }
+
+  /* ── Mode switch ── */
+  function setMode(mode) {
+    if (isRunning) stopTimer();
+    currentMode = mode;
+
+    modeButtons.forEach((btn, i) => {
+      btn.classList.toggle('active', ['pomodoro','short','long'][i] === mode);
+    });
+
+    const cfg = MODES[mode];
+    totalSeconds = cfg.minutes * 60;
+    remaining    = totalSeconds;
+    labelEl.textContent = cfg.label;
+    ring.style.stroke   = cfg.color;
+    document.querySelectorAll('.btn-primary, .mode-btn.active, .session-dot.done')
+      .forEach(el => { if (el.classList.contains('btn-primary')) el.style.background = cfg.color; });
+
+    render();
+    startBtn.textContent = 'Start';
+    document.getElementById('customMin').value = '';
+  }
+
+  /* ── Custom time ── */
+  function applyCustomTime() {
+    const val = parseInt(document.getElementById('customMin').value, 10);
+    if (isNaN(val) || val < 1 || val > 99) {
+      showToast('Enter a number between 1 and 99');
+      return;
+    }
+    if (isRunning) stopTimer();
+    totalSeconds = val * 60;
+    remaining    = totalSeconds;
+    render();
+    startBtn.textContent = 'Start';
+  }
+
+  /* ── Timer logic ── */
+  function tick() {
+    if (remaining <= 0) {
+      clearInterval(intervalId);
+      intervalId = null;
+      isRunning  = false;
+      remaining  = 0;
+      render();
+      startBtn.textContent = 'Start';
+
+      if (currentMode === 'pomodoro') {
+        sessions++;
+        updateSessionDots();
+        showToast('Pomodoro complete! Take a break ✨');
+      } else {
+        showToast('Break over — back to work! 💪');
+      }
+      return;
+    }
+    remaining--;
+    render();
+  }
+
+  function startTimer() {
+    if (remaining <= 0) return;
+    isRunning = true;
+    intervalId = setInterval(tick, 1000);
+    startBtn.textContent = 'Pause';
+  }
+
+  function stopTimer() {
+    clearInterval(intervalId);
+    intervalId = null;
+    isRunning  = false;
+    startBtn.textContent = 'Resume';
+  }
+
+  function toggleTimer() {
+    if (isRunning) {
+      stopTimer();
+    } else {
+      if (remaining <= 0) {
+        remaining = totalSeconds;
+        render();
+      }
+      startTimer();
     }
   }
 
-  document.getElementById("setBtn").onclick = () => {
-    const mins = parseInt(document.getElementById("minutes").value);
+  function resetTimer() {
+    stopTimer();
+    remaining = totalSeconds;
+    render();
+    startBtn.textContent = 'Start';
+  }
 
-    if(!mins || mins <= 0) return;
-
-    total = mins * 60;
-    left = total;
-    update();
-  };
-
-  document.getElementById("startBtn").onclick = () => {
-    if(timer || left <= 0) return;
-
-    timer = setInterval(() => {
-      left--;
-      update();
-
-      if(left <= 0){
-        clearInterval(timer);
-        timer = null;
-        alert("Done ✨");
-      }
-    },1000);
-  };
-
-  document.getElementById("pauseBtn").onclick = () => {
-    clearInterval(timer);
-    timer = null;
-  };
-
-  document.getElementById("resetBtn").onclick = () => {
-    clearInterval(timer);
-    timer = null;
-    left = total;
-    update();
-  };
-});
+  /* ── Initial render ── */
+  render();
+  updateSessionDots();
 </script>
-
 </body>
 </html>
